@@ -5,6 +5,13 @@ import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 import { execSync } from "child_process";
 
+const args = process.argv.slice(2);
+if (!args[0]) {
+  console.error("Please pass a path to the gutenberg checkout.");
+  process.exit(1);
+}
+const gutenbergPath = args[0];
+
 const data = execSync("yarn install --json").toString().split("\n");
 const errors = data
   .map((entry) => {
@@ -18,14 +25,14 @@ const errors = data
 const peerDepWarnings = errors.filter(({ name }) => name === 2);
 
 const peerDepVersions = {
-  react: "^17",
-  "react-dom": "^17",
+  react: "^17.0.0",
+  "react-dom": "^17.0.0",
 };
 
 // map of "packageName": peerDepToAdd[]
 const fixes = {};
 for (const { data: warning } of peerDepWarnings) {
-  const targetPackage = warning.match(/(@wordpress\/.*?)@/);
+  const targetPackage = warning.match(/@wordpress\/(.*?)@/);
   if (!targetPackage || typeof !targetPackage[1] === "string") {
     continue;
   }
@@ -47,7 +54,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 for (const [pkg, fix] of Object.entries(fixes)) {
   console.log(pkg, fix);
-  const packageJson = resolve(__dirname, "node_modules", pkg, "package.json");
+  const packageJson = resolve(
+    __dirname,
+    gutenbergPath,
+    "packages",
+    pkg,
+    "package.json"
+  );
   try {
     await access(packageJson, constants.R_OK);
   } catch {
@@ -65,6 +78,6 @@ for (const [pkg, fix] of Object.entries(fixes)) {
   for (const peerDep of fix) {
     packageInfo.peerDependencies[peerDep] = peerDepVersions[peerDep];
   }
-  await writeFile(packageJson, JSON.stringify(packageInfo, null, 2));
+  await writeFile(packageJson, JSON.stringify(packageInfo, null, "\t"));
   console.log(`Updated peer deps in ${packageJson}`);
 }
