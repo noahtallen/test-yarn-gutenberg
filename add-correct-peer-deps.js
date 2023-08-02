@@ -25,8 +25,8 @@ const errors = data
 const peerDepWarnings = errors.filter(({ name }) => name === 2);
 
 const peerDepVersions = {
-  react: "^17.0.0",
-  "react-dom": "^17.0.0",
+  react: "^18.0.0",
+  "react-dom": "^18.0.0",
 };
 
 // map of "packageName": peerDepToAdd[]
